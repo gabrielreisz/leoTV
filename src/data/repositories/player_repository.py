@@ -63,14 +63,20 @@ class PlayerRepository:
             """, (nickname, faceit_id, elo, level, avatar_url))
             conn.commit()
             return True
-        except sqlite3.IntegrityError:
-            cursor.execute("""
-                UPDATE players 
-                SET elo = ?, level = ?, avatar_url = ?, last_updated = CURRENT_TIMESTAMP 
-                WHERE nickname = ?
-            """, (elo, level, avatar_url, nickname))
-            conn.commit()
-            return True
+        except sqlite3.IntegrityError as e:
+            existing_player = cursor.execute("""
+                SELECT faceit_id FROM players WHERE nickname = ? OR faceit_id = ?
+            """, (nickname, faceit_id)).fetchone()
+            
+            if existing_player:
+                cursor.execute("""
+                    UPDATE players 
+                    SET elo = ?, level = ?, avatar_url = ?, last_updated = CURRENT_TIMESTAMP 
+                    WHERE nickname = ? OR faceit_id = ?
+                """, (elo, level, avatar_url, nickname, faceit_id))
+                conn.commit()
+                return True
+            return False
         except sqlite3.Error as e:
             print(f"Database error: {e}")
             return False

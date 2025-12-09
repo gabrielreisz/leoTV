@@ -40,13 +40,16 @@ apply_custom_css()
 
 menu = get_navigation_menu()
 
-if menu == "🏆 Ranking":
+if menu == "🏠 Dashboard":
+    from src.presentation.pages.dashboard_page import render_dashboard_page
+    render_dashboard_page(player_service, ranking_service, match_service)
+elif menu == "🏆 Ranking":
     render_ranking_page(ranking_service)
 elif menu == "👥 Perfis":
     render_profiles_page(player_service, match_service)
 elif menu == "📊 Estatísticas":
     render_statistics_page(player_service)
-elif menu == "➕ Gerenciar Jogadores":
-    render_manage_players_page(player_service)
 elif menu == "📈 Análise de Desempenho":
     render_performance_page(player_service, match_service)
+elif menu == "➕ Gerenciar":
+    render_manage_players_page(player_service)

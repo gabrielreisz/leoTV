@@ -100,22 +100,66 @@ def get_player_matches(player_id, limit=20, use_cache=True):
         match_id = match.get("match_id")
         match_stats = get_match_stats(match_id, use_cache)
         
-        if match_stats:
+        if match_stats and len(match_stats) > 0:
             player_stats = None
+            player_team_result = None
+            
             for team in match_stats[0].get("teams", []):
                 for player in team.get("players", []):
-                    if player["player_id"] == player_id:
+                    if player.get("player_id") == player_id:
                         player_stats = player.get("player_stats", {})
+                        player_team_result = team.get("team_stats", {}).get("Team Win") or team.get("Result")
                         break
                 if player_stats:
                     break
             
             if player_stats:
+                map_name = match.get("game_map_name") or match.get("i18n")
+                if not map_name:
+                    map_obj = match.get("map")
+                    if isinstance(map_obj, dict):
+                        map_name = map_obj.get("name") or map_obj.get("i18n") or "Unknown"
+                    elif isinstance(map_obj, str):
+                        map_name = map_obj
+                    else:
+                        map_name = "Unknown"
+                
+                result = match.get("game_result")
+                if not result:
+                    result = match.get("result")
+                if not result:
+                    result = player_team_result
+                if not result:
+                    factions = match.get("factions", {})
+                    if factions:
+                        for faction in factions.values():
+                            if player_id in [p.get("player_id") for p in faction.get("players", [])]:
+                                result = faction.get("stats", {}).get("score") or "Unknown"
+                                break
+                
+                if not result:
+                    team_stats = match_stats[0].get("teams", [])
+                    for team in team_stats:
+                        for p in team.get("players", []):
+                            if p.get("player_id") == player_id:
+                                team_result = team.get("team_stats", {}).get("Team Win")
+                                if team_result:
+                                    result = "1" if team_result == "1" else "0"
+                                break
+                
+                started_at = match.get("started_at")
+                if not started_at:
+                    started_at = match.get("finished_at")
+                if not started_at:
+                    started_at = match.get("date")
+                if not started_at:
+                    started_at = match.get("created_at")
+                
                 detailed_matches.append({
                     "match_id": match_id,
-                    "map": match.get("map", {}).get("name", "Unknown"),
-                    "date": match.get("started_at", "Unknown"),
-                    "result": match.get("result", "Unknown"),
+                    "map": map_name or "Unknown",
+                    "date": started_at or "",
+                    "result": result or "Unknown",
                     "score": match.get("score", "Unknown"),
                     "stats": player_stats,
                 })

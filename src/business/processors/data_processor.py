@@ -14,12 +14,18 @@ def process_player_matches(matches, player_nickname):
     
     for match in matches:
         stats = match.get("stats", {})
-        total_kills += int(stats.get("Kills", 0))
-        total_deaths += int(stats.get("Deaths", 1))
-        total_assists += int(stats.get("Assists", 0))
-        total_headshots += int(stats.get("Headshots", 0))
-        total_mvps += int(stats.get("MVPs", 0))
-        if match.get("result") == "victory":
+        total_kills += int(stats.get("Kills", 0) or stats.get("kills", 0))
+        total_deaths += int(stats.get("Deaths", 1) or stats.get("deaths", 1))
+        total_assists += int(stats.get("Assists", 0) or stats.get("assists", 0))
+        total_headshots += int(stats.get("Headshots", 0) or stats.get("headshots", 0))
+        total_mvps += int(stats.get("MVPs", 0) or stats.get("mvps", 0))
+        
+        result = match.get("result", "")
+        if isinstance(result, str):
+            result_lower = result.lower()
+            if result == "1" or result_lower in ["victory", "win", "won"]:
+                wins += 1
+        elif result == 1:
             wins += 1
             
     return {
@@ -35,6 +41,32 @@ def process_player_matches(matches, player_nickname):
         "avg_hs": (total_headshots / total_kills * 100) if total_kills > 0 else 0,
         "total_mvp": total_mvps
     }
+
+def calculate_rws(matches, player_id):
+    if not matches:
+        return 0.0
+    
+    total_rws = 0.0
+    matches_with_stats = 0
+    
+    for match in matches:
+        stats = match.get("stats", {})
+        kills = int(stats.get("Kills", 0))
+        assists = int(stats.get("Assists", 0))
+        damage = int(stats.get("Damage", 0))
+        
+        result = match.get("result", "")
+        is_win = result == "1" or result.lower() == "victory" or result.lower() == "win"
+        
+        base_score = (kills * 2.0) + (assists * 1.0) + (damage * 0.01)
+        
+        if is_win:
+            base_score *= 1.5
+        
+        total_rws += base_score
+        matches_with_stats += 1
+    
+    return round(total_rws / matches_with_stats, 2) if matches_with_stats > 0 else 0.0
 
 def calculate_rws_leotv(player_id, match_stats_list):
     total_score = 0

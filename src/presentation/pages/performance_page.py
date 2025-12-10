@@ -57,7 +57,7 @@ def render_performance_page(player_service: PlayerService, match_service: MatchS
                         tab1, tab2, tab3 = st.tabs(["📋 Histórico de Partidas", "📊 Estatísticas Detalhadas", "📈 Tendências"])
                         
                         with tab1:
-                            match_history = match_service.format_match_history_for_display(matches)
+                            match_history = match_service.format_match_history_for_display(matches, player_id=player_data[1])
                             df_history = pd.DataFrame(match_history)
                             
                             if not df_history.empty:

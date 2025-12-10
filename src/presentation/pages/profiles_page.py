@@ -41,7 +41,7 @@ def render_profiles_page(player_service: PlayerService, match_service: MatchServ
                             
                             st.markdown("---")
                             st.subheader("🎮 Últimas Partidas")
-                            match_data = match_service.format_match_data_for_display(matches, limit=10)
+                            match_data = match_service.format_match_data_for_display(matches, limit=10, player_id=player_data[1])
                             st.dataframe(pd.DataFrame(match_data), width='stretch', hide_index=True)
                     else:
                         st.info("Nenhuma partida encontrada para este jogador.")

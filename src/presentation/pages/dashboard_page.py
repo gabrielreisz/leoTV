@@ -102,3 +102,4 @@ def render_dashboard_page(player_service: PlayerService, ranking_service: Rankin
                 st.info("Nenhuma partida encontrada para este jogador.")
 
 
+

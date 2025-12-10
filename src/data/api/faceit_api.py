@@ -114,15 +114,41 @@ def get_player_matches(player_id, limit=20, use_cache=True):
                     break
             
             if player_stats:
+                map_name = None
                 map_name = match.get("game_map_name") or match.get("i18n")
+                
                 if not map_name:
                     map_obj = match.get("map")
                     if isinstance(map_obj, dict):
-                        map_name = map_obj.get("name") or map_obj.get("i18n") or "Unknown"
+                        map_name = map_obj.get("name") or map_obj.get("i18n") or map_obj.get("game_map_name")
                     elif isinstance(map_obj, str):
                         map_name = map_obj
-                    else:
-                        map_name = "Unknown"
+                
+                if not map_name and match_stats and len(match_stats) > 0:
+                    map_name = match_stats[0].get("round_stats", {}).get("Map") or match_stats[0].get("Map")
+                
+                if not map_name:
+                    voting = match.get("voting", {})
+                    if voting:
+                        map_voting = voting.get("map", {})
+                        if isinstance(map_voting, dict):
+                            map_name = map_voting.get("name") or map_voting.get("i18n")
+                        elif isinstance(map_voting, str):
+                            map_name = map_voting
+                
+                if not map_name:
+                    map_name = match.get("competition_name")
+                
+                if not map_name and match_stats and len(match_stats) > 0:
+                    for round_data in match_stats:
+                        round_stats = round_data.get("round_stats", {})
+                        if round_stats:
+                            map_name = round_stats.get("Map") or round_stats.get("map")
+                            if map_name:
+                                break
+                
+                if not map_name or map_name == "Unknown":
+                    map_name = "N/A"
                 
                 result = match.get("game_result")
                 if not result:
@@ -147,18 +173,36 @@ def get_player_matches(player_id, limit=20, use_cache=True):
                                     result = "1" if team_result == "1" else "0"
                                 break
                 
+                started_at = None
                 started_at = match.get("started_at")
+                
                 if not started_at:
                     started_at = match.get("finished_at")
                 if not started_at:
                     started_at = match.get("date")
                 if not started_at:
                     started_at = match.get("created_at")
+                if not started_at and match_stats and len(match_stats) > 0:
+                    started_at = match_stats[0].get("round_stats", {}).get("Date") or match_stats[0].get("Date")
+                if not started_at:
+                    for key in ["timestamp", "time", "match_date", "game_date"]:
+                        if match.get(key):
+                            started_at = match.get(key)
+                            break
+                
+                if not started_at:
+                    started_at = ""
+                elif isinstance(started_at, (int, float)):
+                    pass
+                elif not isinstance(started_at, str):
+                    started_at = str(started_at) if started_at else ""
                 
                 detailed_matches.append({
                     "match_id": match_id,
-                    "map": map_name or "Unknown",
-                    "date": started_at or "",
+                    "map": map_name if map_name else "N/A",
+                    "date": started_at if started_at else "",
+                    "started_at": match.get("started_at", ""),
+                    "finished_at": match.get("finished_at", ""),
                     "result": result or "Unknown",
                     "score": match.get("score", "Unknown"),
                     "stats": player_stats,
